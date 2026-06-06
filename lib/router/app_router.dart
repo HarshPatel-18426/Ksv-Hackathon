@@ -48,10 +48,10 @@ class AppRouter {
         final role = authProvider.currentUser!.role;
         final path = state.uri.path;
 
-        if (path.startsWith('/vendors') && !_isAllowed(role, [UserRole.admin, UserRole.procurementOfficer, UserRole.manager])) {
+        if (path.startsWith('/vendors') && !_isAllowed(role, [UserRole.admin, UserRole.manager])) {
           return '/dashboard';
         }
-        if (path.startsWith('/approvals') && !_isAllowed(role, [UserRole.admin, UserRole.manager, UserRole.procurementOfficer])) {
+        if (path.startsWith('/approvals') && !_isAllowed(role, [UserRole.admin, UserRole.manager])) {
           return '/dashboard';
         }
         if (path.startsWith('/purchase-orders') && !_isAllowed(role, [UserRole.admin, UserRole.procurementOfficer, UserRole.manager])) {

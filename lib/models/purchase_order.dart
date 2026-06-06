@@ -117,22 +117,35 @@ class PurchaseOrder {
     );
   }
 
+  static DateTime _parseDateTime(dynamic val) {
+    if (val == null) return DateTime.now();
+    if (val is String) return DateTime.parse(val);
+    if (val is DateTime) return val;
+    try {
+      return (val as dynamic).toDate();
+    } catch (_) {
+      return DateTime.now();
+    }
+  }
+
   factory PurchaseOrder.fromJson(Map<String, dynamic> json) {
     return PurchaseOrder(
       id: json['id'] as String,
       vendorId: json['vendorId'] as String,
       vendorName: json['vendorName'] as String,
       vendorGst: json['vendorGst'] as String? ?? '22AAAAA0000A1Z5',
-      lineItems: (json['lineItems'] as List<dynamic>)
-          .map((e) => PoLineItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      lineItems: json['lineItems'] != null
+          ? (json['lineItems'] as List<dynamic>)
+              .map((e) => PoLineItem.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : [],
       deliveryAddress: json['deliveryAddress'] as String,
       paymentTerms: json['paymentTerms'] as String,
       status: PoStatus.values.firstWhere(
         (e) => e.name == json['status'],
         orElse: () => PoStatus.draft,
       ),
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: _parseDateTime(json['createdAt']),
       isIgst: json['isIgst'] as bool? ?? false,
     );
   }

@@ -123,6 +123,17 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> sendPasswordReset(String email) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> logout() async {
     _isLoading = true;
     notifyListeners();

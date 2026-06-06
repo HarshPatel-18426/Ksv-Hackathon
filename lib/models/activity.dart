@@ -21,6 +21,17 @@ class ActivityLogEntry {
     this.afterValues,
   });
 
+  static DateTime _parseDateTime(dynamic val) {
+    if (val == null) return DateTime.now();
+    if (val is String) return DateTime.parse(val);
+    if (val is DateTime) return val;
+    try {
+      return (val as dynamic).toDate();
+    } catch (_) {
+      return DateTime.now();
+    }
+  }
+
   factory ActivityLogEntry.fromJson(Map<String, dynamic> json) {
     return ActivityLogEntry(
       id: json['id'] as String,
@@ -28,7 +39,7 @@ class ActivityLogEntry {
       userName: json['userName'] as String,
       userAvatar: json['userAvatar'] as String?,
       actionDescription: json['actionDescription'] as String,
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      timestamp: _parseDateTime(json['timestamp']),
       module: json['module'] as String,
       beforeValues: json['beforeValues'] as Map<String, dynamic>?,
       afterValues: json['afterValues'] as Map<String, dynamic>?,

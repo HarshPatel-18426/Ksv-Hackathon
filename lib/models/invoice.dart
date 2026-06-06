@@ -114,6 +114,17 @@ class Invoice {
     );
   }
 
+  static DateTime _parseDateTime(dynamic val) {
+    if (val == null) return DateTime.now();
+    if (val is String) return DateTime.parse(val);
+    if (val is DateTime) return val;
+    try {
+      return (val as dynamic).toDate();
+    } catch (_) {
+      return DateTime.now();
+    }
+  }
+
   factory Invoice.fromJson(Map<String, dynamic> json) {
     return Invoice(
       id: json['id'] as String,
@@ -121,10 +132,12 @@ class Invoice {
       vendorName: json['vendorName'] as String,
       vendorGst: json['vendorGst'] as String? ?? '22AAAAA0000A1Z5',
       poReference: json['poReference'] as String,
-      lineItems: (json['lineItems'] as List<dynamic>)
-          .map((e) => InvoiceLineItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      dueDate: DateTime.parse(json['dueDate'] as String),
+      lineItems: json['lineItems'] != null
+          ? (json['lineItems'] as List<dynamic>)
+              .map((e) => InvoiceLineItem.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : [],
+      dueDate: _parseDateTime(json['dueDate']),
       status: InvoiceStatus.values.firstWhere(
         (e) => e.name == json['status'],
         orElse: () => InvoiceStatus.unpaid,

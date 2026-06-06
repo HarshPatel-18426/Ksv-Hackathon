@@ -33,7 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final List<Map<String, dynamic>> _usersList = [
     {'name': 'Rajesh Kumar', 'email': 'rajesh.kumar@vendorbridge.in', 'role': UserRole.admin, 'active': true},
     {'name': 'Ananya Sharma', 'email': 'ananya.sharma@vendorbridge.in', 'role': UserRole.procurementOfficer, 'active': true},
-    {'name': 'Vikram Malhotra', 'email': 'vikram.malhotra@vendorbridge.in', 'role': UserRole.manager, 'active': true},
+    {'name': 'Manager', 'email': 'manager@vendorbridge.in', 'role': UserRole.manager, 'active': true},
     {'name': 'Aarav Mehta', 'email': 'aarav.mehta@vendorbridge.in', 'role': UserRole.vendor, 'active': true},
   ];
 

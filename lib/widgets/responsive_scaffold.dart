@@ -43,7 +43,7 @@ class ResponsiveScaffold extends StatelessWidget {
       title: 'Vendors',
       icon: Icons.people_outline,
       route: '/vendors',
-      allowedRoles: [UserRole.admin, UserRole.procurementOfficer, UserRole.manager],
+      allowedRoles: [UserRole.admin, UserRole.manager],
     ),
     NavigationItem(
       title: 'RFQs',
@@ -55,7 +55,7 @@ class ResponsiveScaffold extends StatelessWidget {
       title: 'Approvals',
       icon: Icons.rule_folder_outlined,
       route: '/approvals',
-      allowedRoles: [UserRole.admin, UserRole.manager, UserRole.procurementOfficer],
+      allowedRoles: [UserRole.admin, UserRole.manager],
     ),
     NavigationItem(
       title: 'Purchase Orders',

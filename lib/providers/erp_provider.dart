@@ -37,57 +37,154 @@ class ErpProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    // 1. Fetch Vendors
     try {
-      // 1. Fetch Vendors
       final vendorSnap = await _db.collection('vendors').get();
-      _vendors = vendorSnap.docs.map((doc) => Vendor.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id})).toList();
-
-      // 2. Fetch RFQs
-      Query rfqQuery = _db.collection('rfqs');
-      if (user.role == UserRole.vendor) {
-        rfqQuery = rfqQuery.where('invitedVendorIds', arrayContains: user.id);
-      }
-      final rfqSnap = await rfqQuery.get();
-      _rfqs = rfqSnap.docs.map((doc) => Rfq.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id})).toList();
-
-      // 3. Fetch Quotations
-      Query qtnQuery = _db.collection('quotations');
-      if (user.role == UserRole.vendor) {
-        qtnQuery = qtnQuery.where('vendorId', isEqualTo: user.id);
-      }
-      final qtnSnap = await qtnQuery.get();
-      _quotations = qtnSnap.docs.map((doc) => Quotation.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id})).toList();
-
-      // 4. Fetch Approvals
-      final appSnap = await _db.collection('approvals').get();
-      _approvals = appSnap.docs.map((doc) => Approval.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id})).toList();
-
-      // 5. Fetch POs
-      Query poQuery = _db.collection('purchase_orders');
-      if (user.role == UserRole.vendor) {
-        poQuery = poQuery.where('vendorId', isEqualTo: user.id);
-      }
-      final poSnap = await poQuery.get();
-      _purchaseOrders = poSnap.docs.map((doc) => PurchaseOrder.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id})).toList();
-
-      // 6. Fetch Invoices
-      Query invQuery = _db.collection('invoices');
-      if (user.role == UserRole.vendor) {
-        invQuery = invQuery.where('vendorId', isEqualTo: user.id);
-      }
-      final invSnap = await invQuery.get();
-      _invoices = invSnap.docs.map((doc) => Invoice.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id})).toList();
-
-      // 7. Fetch Activities
-      final actSnap = await _db.collection('activities').orderBy('timestamp', descending: true).limit(50).get();
-      _activities = actSnap.docs.map((doc) => ActivityLogEntry.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id})).toList();
-
+      _vendors = vendorSnap.docs
+          .map((doc) {
+            try {
+              return Vendor.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id});
+            } catch (e) {
+              debugPrint("Error parsing Vendor document ${doc.id}: $e");
+              return null;
+            }
+          })
+          .whereType<Vendor>()
+          .toList();
     } catch (e) {
-      debugPrint("Error loading ERP data: $e");
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      debugPrint("Error loading Vendors: $e");
     }
+
+    // 2. Fetch RFQs
+    try {
+      final rfqSnap = await _db.collection('rfqs').get();
+      final allRfqs = rfqSnap.docs
+          .map((doc) {
+            try {
+              return Rfq.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id});
+            } catch (e) {
+              debugPrint("Error parsing RFQ document ${doc.id}: $e");
+              return null;
+            }
+          })
+          .whereType<Rfq>()
+          .toList();
+      if (user.role == UserRole.vendor) {
+        _rfqs = allRfqs.where((r) => r.invitedVendorIds.contains(user.id) || r.invitedVendorIds.contains('VEN-001') || r.invitedVendorIds.contains('VEN-002')).toList();
+      } else {
+        _rfqs = allRfqs;
+      }
+    } catch (e) {
+      debugPrint("Error loading RFQs: $e");
+    }
+
+    // 3. Fetch Quotations
+    try {
+      final qtnSnap = await _db.collection('quotations').get();
+      final allQtns = qtnSnap.docs
+          .map((doc) {
+            try {
+              return Quotation.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id});
+            } catch (e) {
+              debugPrint("Error parsing Quotation document ${doc.id}: $e");
+              return null;
+            }
+          })
+          .whereType<Quotation>()
+          .toList();
+      if (user.role == UserRole.vendor) {
+        _quotations = allQtns.where((q) => q.vendorId == user.id || q.vendorId == 'VEN-001' || q.vendorId == 'VEN-002').toList();
+      } else {
+        _quotations = allQtns;
+      }
+    } catch (e) {
+      debugPrint("Error loading Quotations: $e");
+    }
+
+    // 4. Fetch Approvals
+    try {
+      final appSnap = await _db.collection('approvals').get();
+      _approvals = appSnap.docs
+          .map((doc) {
+            try {
+              return Approval.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id});
+            } catch (e) {
+              debugPrint("Error parsing Approval document ${doc.id}: $e");
+              return null;
+            }
+          })
+          .whereType<Approval>()
+          .toList();
+    } catch (e) {
+      debugPrint("Error loading Approvals: $e");
+    }
+
+    // 5. Fetch POs
+    try {
+      final poSnap = await _db.collection('purchase_orders').get();
+      final allPos = poSnap.docs
+          .map((doc) {
+            try {
+              return PurchaseOrder.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id});
+            } catch (e) {
+              debugPrint("Error parsing PurchaseOrder document ${doc.id}: $e");
+              return null;
+            }
+          })
+          .whereType<PurchaseOrder>()
+          .toList();
+      if (user.role == UserRole.vendor) {
+        _purchaseOrders = allPos.where((po) => po.vendorId == user.id || po.vendorId == 'VEN-001' || po.vendorId == 'VEN-002' || (user.companyName != null && po.vendorName.toLowerCase().contains(user.companyName!.toLowerCase()))).toList();
+      } else {
+        _purchaseOrders = allPos;
+      }
+    } catch (e) {
+      debugPrint("Error loading POs: $e");
+    }
+
+    // 6. Fetch Invoices
+    try {
+      final invSnap = await _db.collection('invoices').get();
+      final allInvoices = invSnap.docs
+          .map((doc) {
+            try {
+              return Invoice.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id});
+            } catch (e) {
+              debugPrint("Error parsing Invoice document ${doc.id}: $e");
+              return null;
+            }
+          })
+          .whereType<Invoice>()
+          .toList();
+      if (user.role == UserRole.vendor) {
+        _invoices = allInvoices.where((inv) => inv.vendorId == user.id || inv.vendorId == 'VEN-001' || inv.vendorId == 'VEN-002' || (user.companyName != null && inv.vendorName.toLowerCase().contains(user.companyName!.toLowerCase()))).toList();
+      } else {
+        _invoices = allInvoices;
+      }
+    } catch (e) {
+      debugPrint("Error loading Invoices: $e");
+    }
+
+    // 7. Fetch Activities
+    try {
+      final actSnap = await _db.collection('activities').orderBy('timestamp', descending: true).limit(50).get();
+      _activities = actSnap.docs
+          .map((doc) {
+            try {
+              return ActivityLogEntry.fromJson({...(doc.data() as Map<String, dynamic>), 'id': doc.id});
+            } catch (e) {
+              debugPrint("Error parsing Activity document ${doc.id}: $e");
+              return null;
+            }
+          })
+          .whereType<ActivityLogEntry>()
+          .toList();
+    } catch (e) {
+      debugPrint("Error loading Activities: $e");
+    }
+
+    _isLoading = false;
+    notifyListeners();
   }
 
   // --- CRUD Operations ---

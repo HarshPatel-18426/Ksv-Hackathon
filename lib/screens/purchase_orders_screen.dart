@@ -469,7 +469,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
               targetId: po.id,
               chain: [
                 ApprovalChainStep(userName: userName, roleLabel: 'Procurement Officer', status: ApprovalStatus.approved, date: DateTime.now().toString().split(' ')[0]),
-                ApprovalChainStep(userName: 'Vikram Malhotra', roleLabel: 'Manager', status: ApprovalStatus.pending, date: null),
+                ApprovalChainStep(userName: 'Manager', roleLabel: 'Manager', status: ApprovalStatus.pending, date: null),
               ],
               comments: [
                 ApprovalComment(userName: userName, text: 'PO drafted and ready for Manager payout authorization.', timestamp: 'Just now')
@@ -479,7 +479,7 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('PO submitted for Approval. Approval ID: $appId'), backgroundColor: const Color(0xFF27AE60)),
               );
-              context.go('/approvals');
+              context.go('/purchase-orders');
             });
           },
         ),

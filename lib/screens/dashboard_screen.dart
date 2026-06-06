@@ -506,7 +506,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               subtitle: 'Create RFQs & invite vendors',
               route: '/rfqs',
             ),
-            if (role != UserRole.vendor) ...[
+            if (role == UserRole.admin || role == UserRole.manager) ...[
               _buildShortcutTile(
                 context,
                 icon: Icons.people_outline,
@@ -559,18 +559,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         if (_isSpeedDialOpen) ...[
-          FloatingActionButton.small(
-            heroTag: 'add_vendor_fab',
-            onPressed: () {
-              setState(() => _isSpeedDialOpen = false);
-              context.go('/vendors');
-              // Trigger vendor dialog addition in next screen
-            },
-            backgroundColor: theme.colorScheme.secondary,
-            foregroundColor: theme.colorScheme.onSecondary,
-            child: const Icon(Icons.person_add),
-          ),
-          const SizedBox(height: 8),
+          if (role == UserRole.admin || role == UserRole.manager) ...[
+            FloatingActionButton.small(
+              heroTag: 'add_vendor_fab',
+              onPressed: () {
+                setState(() => _isSpeedDialOpen = false);
+                context.go('/vendors');
+                // Trigger vendor dialog addition in next screen
+              },
+              backgroundColor: theme.colorScheme.secondary,
+              foregroundColor: theme.colorScheme.onSecondary,
+              child: const Icon(Icons.person_add),
+            ),
+            const SizedBox(height: 8),
+          ],
           FloatingActionButton.small(
             heroTag: 'create_rfq_fab',
             onPressed: () {

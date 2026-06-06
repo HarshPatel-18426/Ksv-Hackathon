@@ -94,14 +94,16 @@ class Quotation {
       rfqId: json['rfqId'] as String,
       vendorId: json['vendorId'] as String,
       vendorName: json['vendorName'] as String,
-      lineItems: (json['lineItems'] as List<dynamic>)
-          .map((e) => QuotationLineItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      deliveryDays: json['deliveryDays'] as int,
-      priceScore: (json['priceScore'] as num).toDouble(),
-      qualityScore: (json['qualityScore'] as num).toDouble(),
-      deliveryScore: (json['deliveryScore'] as num).toDouble(),
-      status: json['status'] as String,
+      lineItems: json['lineItems'] != null
+          ? (json['lineItems'] as List<dynamic>)
+              .map((e) => QuotationLineItem.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : [],
+      deliveryDays: json['deliveryDays'] as int? ?? 0,
+      priceScore: (json['priceScore'] as num? ?? 0.0).toDouble(),
+      qualityScore: (json['qualityScore'] as num? ?? 0.0).toDouble(),
+      deliveryScore: (json['deliveryScore'] as num? ?? 0.0).toDouble(),
+      status: json['status'] as String? ?? 'Pending',
     );
   }
 

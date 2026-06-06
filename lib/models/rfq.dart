@@ -100,21 +100,36 @@ class Rfq {
     return diff < 0 ? 0 : diff;
   }
 
+  static DateTime _parseDateTime(dynamic val) {
+    if (val == null) return DateTime.now();
+    if (val is String) return DateTime.parse(val);
+    if (val is DateTime) return val;
+    try {
+      return (val as dynamic).toDate();
+    } catch (_) {
+      return DateTime.now();
+    }
+  }
+
   factory Rfq.fromJson(Map<String, dynamic> json) {
     return Rfq(
       id: json['id'] as String,
       title: json['title'] as String,
       description: json['description'] as String,
-      deadline: DateTime.parse(json['deadline'] as String),
-      invitedVendorIds: List<String>.from(json['invitedVendorIds'] as List<dynamic>),
-      lineItems: (json['lineItems'] as List<dynamic>)
-          .map((e) => RfqLineItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      deadline: _parseDateTime(json['deadline']),
+      invitedVendorIds: json['invitedVendorIds'] != null
+          ? List<String>.from(json['invitedVendorIds'] as List<dynamic>)
+          : [],
+      lineItems: json['lineItems'] != null
+          ? (json['lineItems'] as List<dynamic>)
+              .map((e) => RfqLineItem.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : [],
       status: RfqStatus.values.firstWhere(
         (e) => e.name == json['status'],
         orElse: () => RfqStatus.draft,
       ),
-      submittedQuotationsCount: json['submittedQuotationsCount'] as int,
+      submittedQuotationsCount: json['submittedQuotationsCount'] as int? ?? 0,
     );
   }
 
