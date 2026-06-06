@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "282359351317",
+    "project_id": "ksv-hackathon",
+    "storage_bucket": "ksv-hackathon.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:282359351317:android:174c240c89a9d52d49261c",
+        "android_client_info": {
+          "package_name": "com.vendorbridge.vendor_bridge"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWfEHXJmYjfqNw-oyFhOPFqlWGEbA_vCY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
