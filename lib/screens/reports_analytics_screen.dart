@@ -173,10 +173,13 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> with Si
 
     for (var rfq in erpProvider.rfqs) {
       if (rfq.status == RfqStatus.awarded) {
-        final winningQtn = erpProvider.quotations.firstWhere(
-          (q) => q.rfqId == rfq.id && (q.status == 'Awarded' || q.status == 'Approved'),
-          orElse: () => erpProvider.quotations.firstWhere((q) => q.rfqId == rfq.id, orElse: () => null as dynamic),
-        );
+        final qtnMatches = erpProvider.quotations.where((q) => q.rfqId == rfq.id && (q.status == 'Awarded' || q.status == 'Approved'));
+        Quotation? winningQtn = qtnMatches.isNotEmpty ? qtnMatches.first : null;
+        if (winningQtn == null) {
+          final fallbackQtns = erpProvider.quotations.where((q) => q.rfqId == rfq.id);
+          winningQtn = fallbackQtns.isNotEmpty ? fallbackQtns.first : null;
+        }
+
         if (winningQtn != null) {
           final rfqEstimate = rfq.lineItems.fold(0.0, (sum, item) => sum + item.totalEstimate);
           final actualCost = winningQtn.totalAmount;
@@ -185,10 +188,10 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> with Si
           awardedCount++;
 
           // Parse month for monthly savings trend
-          final awardLog = erpProvider.activities.firstWhere(
+          final awardLogMatches = erpProvider.activities.where(
             (a) => a.module == 'RFQ' && a.actionDescription.contains('status to Awarded') && a.actionDescription.contains(rfq.id),
-            orElse: () => null as dynamic,
           );
+          final awardLog = awardLogMatches.isNotEmpty ? awardLogMatches.first : null;
           final awardDate = awardLog != null ? awardLog.timestamp : rfq.deadline;
           final diffInMonths = (now.year - awardDate.year) * 12 + now.month - awardDate.month;
           if (diffInMonths >= 0 && diffInMonths < 6) {
