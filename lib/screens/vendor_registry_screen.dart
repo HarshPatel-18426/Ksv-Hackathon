@@ -321,9 +321,15 @@ class _VendorRegistryScreenState extends State<VendorRegistryScreen> {
                   DropdownButtonFormField<String>(
                     value: tempCategory,
                     decoration: const InputDecoration(labelText: 'Category'),
-                    items: ['All', 'Metals & Alloys', 'Polymers & Chemicals', 'Engineering & Machinery', 'Cement & Building Materials'].map((cat) {
-                      return DropdownMenuItem(value: cat, child: Text(cat));
-                    }).toList(),
+                    items: (() {
+                      final list = ['All', 'Metals & Alloys', 'Engineering', 'Polymers', 'Cement', 'Unassigned'];
+                      if (!list.contains(tempCategory)) {
+                        list.add(tempCategory);
+                      }
+                      return list.map((cat) {
+                        return DropdownMenuItem(value: cat, child: Text(cat));
+                      }).toList();
+                    })(),
                     onChanged: (val) {
                       if (val != null) {
                         setDialogState(() => tempCategory = val);
@@ -566,133 +572,150 @@ class _VendorRegistryScreenState extends State<VendorRegistryScreen> {
     showDialog(
       context: context,
       builder: (ctx) {
-        return AlertDialog(
-          title: Text(existingVendor == null ? 'Add Vendor' : 'Edit Vendor'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Vendor Name'),
-                    validator: (val) => val == null || val.trim().isEmpty ? 'Enter vendor name' : null,
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(existingVendor == null ? 'Add Vendor' : 'Edit Vendor'),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(labelText: 'Vendor Name'),
+                        validator: (val) => val == null || val.trim().isEmpty ? 'Enter vendor name' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: categoryController.text,
+                        decoration: const InputDecoration(labelText: 'Category'),
+                        items: (() {
+                          final list = ['Metals & Alloys', 'Engineering', 'Polymers', 'Cement', 'Unassigned'];
+                          if (!list.contains(categoryController.text)) {
+                            list.add(categoryController.text);
+                          }
+                          return list.map((cat) {
+                            return DropdownMenuItem(value: cat, child: Text(cat));
+                          }).toList();
+                        })(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setDialogState(() {
+                              categoryController.text = val;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: gstController,
+                        decoration: const InputDecoration(
+                          labelText: 'GST Number',
+                          hintText: 'e.g. 22AAAAA0000A1Z5',
+                          prefixIcon: Icon(Icons.badge_outlined),
+                        ),
+                        textCapitalization: TextCapitalization.characters,
+                        validator: (val) {
+                          if (val == null || val.trim().isEmpty) return 'Enter GST number';
+                          if (val.trim().length < 3) return 'GST number too short';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: emailController,
+                        decoration: const InputDecoration(labelText: 'Email Address'),
+                        validator: (val) {
+                          if (val == null || val.trim().isEmpty) return 'Enter email';
+                          if (!val.contains('@') || !val.contains('.')) return 'Enter valid email address';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: phoneController,
+                        decoration: const InputDecoration(labelText: 'Phone Number'),
+                        validator: (val) {
+                          if (val == null || val.trim().isEmpty) return 'Enter phone number';
+                          if (val.trim().length < 10) return 'Enter 10-digit phone number';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: addressController,
+                        decoration: const InputDecoration(labelText: 'Address'),
+                        validator: (val) => val == null || val.trim().isEmpty ? 'Enter address' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<VendorStatus>(
+                        value: status,
+                        decoration: const InputDecoration(labelText: 'Verification Status'),
+                        items: VendorStatus.values.map((s) {
+                          return DropdownMenuItem(value: s, child: Text(s.label));
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setDialogState(() {
+                              status = val;
+                            });
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: categoryController.text,
-                    decoration: const InputDecoration(labelText: 'Category'),
-                    items: ['Metals & Alloys', 'Polymers & Chemicals', 'Engineering & Machinery', 'Cement & Building Materials'].map((cat) {
-                      return DropdownMenuItem(value: cat, child: Text(cat));
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) categoryController.text = val;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: gstController,
-                    decoration: const InputDecoration(
-                      labelText: 'GST Number',
-                      hintText: 'e.g. 22AAAAA0000A1Z5',
-                      prefixIcon: Icon(Icons.badge_outlined),
-                    ),
-                    textCapitalization: TextCapitalization.characters,
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'Enter GST number';
-                      // Loose validation for testing/demo
-                      if (val.trim().length < 3) return 'GST number too short';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(labelText: 'Email Address'),
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'Enter email';
-                      if (!val.contains('@') || !val.contains('.')) return 'Enter valid email address';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: phoneController,
-                    decoration: const InputDecoration(labelText: 'Phone Number'),
-                    validator: (val) {
-                      if (val == null || val.trim().isEmpty) return 'Enter phone number';
-                      if (val.trim().length < 10) return 'Enter 10-digit phone number';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: addressController,
-                    decoration: const InputDecoration(labelText: 'Address'),
-                    validator: (val) => val == null || val.trim().isEmpty ? 'Enter address' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<VendorStatus>(
-                    value: status,
-                    decoration: const InputDecoration(labelText: 'Verification Status'),
-                    items: VendorStatus.values.map((s) {
-                      return DropdownMenuItem(value: s, child: Text(s.label));
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) status = val;
-                    },
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  final erp = Provider.of<ErpProvider>(context, listen: false);
-                  final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      final erp = Provider.of<ErpProvider>(context, listen: false);
+                      final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
 
-                  final v = Vendor(
-                    id: existingVendor?.id ?? 'VEN-00${erp.vendors.length + 1}',
-                    name: nameController.text.trim(),
-                    category: categoryController.text,
-                    gstNumber: gstController.text.trim().toUpperCase(),
-                    rating: existingVendor?.rating ?? 4.0,
-                    status: status,
-                    email: emailController.text.trim(),
-                    phone: phoneController.text.trim(),
-                    address: addressController.text.trim(),
-                    performance: existingVendor?.performance ?? VendorPerformance(priceScore: 85, qualityScore: 85, deliveryScore: 85),
-                    attachments: existingVendor?.attachments ?? [],
-                    activityLog: existingVendor?.activityLog ?? ['Vendor registered on ${DateTime.now().toString().split(' ')[0]}'],
-                  );
+                      final v = Vendor(
+                        id: existingVendor?.id ?? 'VEN-00${erp.vendors.length + 1}',
+                        name: nameController.text.trim(),
+                        category: categoryController.text,
+                        gstNumber: gstController.text.trim().toUpperCase(),
+                        rating: existingVendor?.rating ?? 4.0,
+                        status: status,
+                        email: emailController.text.trim(),
+                        phone: phoneController.text.trim(),
+                        address: addressController.text.trim(),
+                        performance: existingVendor?.performance ?? VendorPerformance(priceScore: 85, qualityScore: 85, deliveryScore: 85),
+                        attachments: existingVendor?.attachments ?? [],
+                        activityLog: existingVendor?.activityLog ?? ['Vendor registered on ${DateTime.now().toString().split(' ')[0]}'],
+                      );
 
-                  if (existingVendor == null) {
-                    erp.addVendor(v, user?.name ?? 'Admin').then((_) {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Vendor registered successfully!'), backgroundColor: Color(0xFF27AE60)),
-                      );
-                    });
-                  } else {
-                    erp.updateVendor(v, user?.name ?? 'Admin').then((_) {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Vendor updated successfully!'), backgroundColor: Color(0xFF27AE60)),
-                      );
-                    });
-                  }
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
+                      if (existingVendor == null) {
+                        erp.addVendor(v, user?.name ?? 'Admin').then((_) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Vendor registered successfully!'), backgroundColor: Color(0xFF27AE60)),
+                          );
+                        });
+                      } else {
+                        erp.updateVendor(v, user?.name ?? 'Admin').then((_) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Vendor updated successfully!'), backgroundColor: Color(0xFF27AE60)),
+                          );
+                        });
+                      }
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
