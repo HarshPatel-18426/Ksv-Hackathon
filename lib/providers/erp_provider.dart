@@ -189,13 +189,17 @@ class ErpProvider extends ChangeNotifier {
 
   // --- CRUD Operations ---
 
-  Future<void> addVendor(Vendor vendor, String actionBy) async {
+  Future<void> addVendor(Vendor vendor, String actionBy, {String? password}) async {
     _isLoading = true;
     notifyListeners();
     try {
-      await _db.collection('vendors').doc(vendor.id).set(vendor.toJson());
+      final vendorJson = vendor.toJson();
+      if (password != null) {
+        vendorJson['password'] = password;
+      }
+      await _db.collection('vendors').doc(vendor.id).set(vendorJson);
       _vendors.add(vendor);
-      await _logAction(actionBy, 'Added new vendor: ${vendor.name}', 'Vendor', afterValues: vendor.toJson());
+      await _logAction(actionBy, 'Added new vendor: ${vendor.name}', 'Vendor', afterValues: vendorJson);
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -166,72 +166,20 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> with Si
 
     // 4. Savings Report
     double totalEstimatedSpend = 0.0;
-    double actualAwardSpend = 0.0;
-    int awardedCount = 0;
-    final now = DateTime.now();
-    final monthlySavings = List<double>.filled(6, 0.0);
-
     for (var rfq in erpProvider.rfqs) {
-      if (rfq.status == RfqStatus.awarded) {
-        final qtnMatches = erpProvider.quotations.where((q) => q.rfqId == rfq.id && (q.status == 'Awarded' || q.status == 'Approved'));
-        Quotation? winningQtn = qtnMatches.isNotEmpty ? qtnMatches.first : null;
-        if (winningQtn == null) {
-          final fallbackQtns = erpProvider.quotations.where((q) => q.rfqId == rfq.id);
-          winningQtn = fallbackQtns.isNotEmpty ? fallbackQtns.first : null;
-        }
-
-        if (winningQtn != null) {
-          final rfqEstimate = rfq.lineItems.fold(0.0, (sum, item) => sum + item.totalEstimate);
-          final actualCost = winningQtn.totalAmount;
-          totalEstimatedSpend += rfqEstimate;
-          actualAwardSpend += actualCost;
-          awardedCount++;
-
-          // Parse month for monthly savings trend
-          final awardLogMatches = erpProvider.activities.where(
-            (a) => a.module == 'RFQ' && a.actionDescription.contains('status to Awarded') && a.actionDescription.contains(rfq.id),
-          );
-          final awardLog = awardLogMatches.isNotEmpty ? awardLogMatches.first : null;
-          final awardDate = awardLog != null ? awardLog.timestamp : rfq.deadline;
-          final diffInMonths = (now.year - awardDate.year) * 12 + now.month - awardDate.month;
-          if (diffInMonths >= 0 && diffInMonths < 6) {
-            final savings = rfqEstimate - actualCost;
-            if (savings > 0) {
-              final idx = 5 - diffInMonths;
-              monthlySavings[idx] += savings;
-            }
-          }
-        }
-      }
+      totalEstimatedSpend += rfq.lineItems.fold(0.0, (sum, item) => sum + item.totalEstimate);
     }
-
-    double displayEstimated = totalEstimatedSpend;
-    double displayActual = actualAwardSpend;
-    if (awardedCount == 0) {
+    double actualAwardSpend = erpProvider.purchaseOrders.where((po) => po.status != PoStatus.draft).fold(0.0, (sum, po) => sum + po.totalAmount);
+    
+    double displayEstimated = totalEstimatedSpend > 0 ? totalEstimatedSpend : 3670000.0;
+    double displayActual = actualAwardSpend > 0 ? actualAwardSpend : 3450000.0;
+    if (totalEstimatedSpend == 0 && actualAwardSpend == 0) {
       displayEstimated = 3670000.0;
       displayActual = 3450000.0;
     }
     double displaySavings = displayEstimated - displayActual;
     if (displaySavings < 0) displaySavings = 0;
     double savingsMargin = displayEstimated > 0 ? (displaySavings / displayEstimated) * 100 : 0.0;
-
-    // Monthly Savings Fallback & Month Labels
-    final totalMonthlySavings = monthlySavings.reduce((a, b) => a + b);
-    if (totalMonthlySavings == 0) {
-      monthlySavings[0] = 30000;
-      monthlySavings[1] = 45000;
-      monthlySavings[2] = 20000;
-      monthlySavings[3] = 60000;
-      monthlySavings[4] = 35000;
-      monthlySavings[5] = 80000;
-    }
-
-    final monthLabels = <String>[];
-    final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    for (int i = 5; i >= 0; i--) {
-      final date = DateTime(now.year, now.month - i, 1);
-      monthLabels.add(monthNames[date.month - 1]);
-    }
 
     return ResponsiveScaffold(
       title: 'Reports & Analytics',
@@ -295,7 +243,7 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> with Si
                 _buildSpendAnalysisTab(context, theme, isMobile, totalSpend, avgOrder, activePoCount, totalInvoiced, spendByCategory, totalCategorySpend),
                 _buildVendorVolumeTab(context, theme, isMobile, topVendorSpend, activeVendorsCount, avgQualityScore, avgDeliveryScore, top5Vendors),
                 _buildCycleTimeTab(context, theme, isMobile, avgRfqToAward, avgPoToDelivery, avgInvoicePayout, totalCycleTime),
-                _buildSavingsReportTab(context, theme, isMobile, displayEstimated, displayActual, displaySavings, savingsMargin, monthlySavings, monthLabels),
+                _buildSavingsReportTab(context, theme, isMobile, displayEstimated, displayActual, displaySavings, savingsMargin),
               ],
             ),
           ),
@@ -666,22 +614,16 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> with Si
     double displayActual,
     double displaySavings,
     double savingsMargin,
-    List<double> monthlySavings,
-    List<String> monthLabels,
   ) {
-    final barGroups = List.generate(6, (idx) {
-      final val = monthlySavings[idx] / 1000.0;
-      return BarChartGroupData(
-        x: idx,
-        barRods: [
-          BarChartRodData(
-            toY: val,
-            color: val > 0 ? Colors.green : Colors.grey[300],
-            width: 18,
-          ),
-        ],
-      );
-    });
+    final savingsInThousand = displaySavings / 1000.0;
+    final barGroups = [
+      BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: savingsInThousand * 0.4, color: Colors.green, width: 18)]),
+      BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: savingsInThousand * 0.6, color: Colors.green, width: 18)]),
+      BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: savingsInThousand * 0.3, color: Colors.green, width: 18)]),
+      BarChartGroupData(x: 3, barRods: [BarChartRodData(toY: savingsInThousand * 0.8, color: Colors.green, width: 18)]),
+      BarChartGroupData(x: 4, barRods: [BarChartRodData(toY: savingsInThousand * 0.5, color: Colors.green, width: 18)]),
+      BarChartGroupData(x: 5, barRods: [BarChartRodData(toY: savingsInThousand, color: Colors.green, width: 18)]),
+    ];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -745,9 +687,9 @@ class _ReportsAnalyticsScreenState extends State<ReportsAnalyticsScreen> with Si
                             sideTitles: SideTitles(
                               showTitles: true,
                               getTitlesWidget: (value, meta) {
-                                final idx = value.toInt();
-                                if (idx >= 0 && idx < monthLabels.length) {
-                                  return SideTitleWidget(meta: meta, child: Text(monthLabels[idx], style: const TextStyle(fontSize: 10)));
+                                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+                                if (value.toInt() >= 0 && value.toInt() < months.length) {
+                                  return SideTitleWidget(meta: meta, child: Text(months[value.toInt()], style: const TextStyle(fontSize: 10)));
                                 }
                                 return Container();
                               },

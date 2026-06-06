@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
 
   UserRole _selectedRole = UserRole.procurementOfficer;
+  String _selectedCategory = 'Metals & Alloys';
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -142,6 +143,30 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             validator: (value) => (value == null || value.isEmpty) ? 'Enter company name' : null,
+                          ),
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            value: _selectedCategory,
+                            decoration: InputDecoration(
+                              labelText: 'Category',
+                              prefixIcon: const Icon(Icons.category_outlined),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            items: ['Metals & Alloys', 'Engineering', 'Polymers', 'Cement', 'Unassigned'].map((cat) {
+                              return DropdownMenuItem<String>(
+                                value: cat,
+                                child: Text(cat),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _selectedCategory = val;
+                                });
+                              }
+                            },
                           ),
                           const SizedBox(height: 16),
                           TextFormField(
@@ -396,6 +421,7 @@ class _LoginScreenState extends State<LoginScreen> {
             role: _selectedRole,
             companyName: _selectedRole == UserRole.vendor ? _companyController.text.trim() : null,
             gstNumber: _selectedRole == UserRole.vendor ? _gstController.text.trim().toUpperCase() : null,
+            category: _selectedRole == UserRole.vendor ? _selectedCategory : null,
           );
         }
         if (mounted) context.go('/dashboard');

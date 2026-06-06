@@ -26,6 +26,7 @@ class UserProfile {
   final String? avatarUrl;
   final String? companyName; // Used if they are a Vendor
   final String? gstNumber;   // Used if they are a Vendor
+  final String? category;    // Used if they are a Vendor
 
   UserProfile({
     required this.id,
@@ -35,6 +36,7 @@ class UserProfile {
     this.avatarUrl,
     this.companyName,
     this.gstNumber,
+    this.category,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -49,6 +51,7 @@ class UserProfile {
       avatarUrl: json['avatarUrl'] as String?,
       companyName: json['companyName'] as String?,
       gstNumber: json['gstNumber'] as String?,
+      category: json['category'] as String?,
     );
   }
 
@@ -61,6 +64,7 @@ class UserProfile {
       'avatarUrl': avatarUrl,
       'companyName': companyName,
       'gstNumber': gstNumber,
+      'category': category,
     };
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../models/user_role.dart';
 import '../models/vendor.dart';
 
@@ -54,6 +55,7 @@ class AuthProvider extends ChangeNotifier {
     required UserRole role,
     String? companyName,
     String? gstNumber,
+    String? category,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -71,16 +73,21 @@ class AuthProvider extends ChangeNotifier {
         role: role,
         companyName: companyName,
         gstNumber: gstNumber,
+        category: category,
       );
 
-      await _db.collection('users').doc(credential.user!.uid).set(userProfile.toJson());
+      final userProfileJson = {
+        ...userProfile.toJson(),
+        'password': password,
+      };
+      await _db.collection('users').doc(credential.user!.uid).set(userProfileJson);
       
       // If role is vendor, also create a record in the 'vendors' collection
       if (role == UserRole.vendor) {
         final vendor = Vendor(
           id: credential.user!.uid,
           name: companyName ?? name,
-          category: 'Unassigned',
+          category: category ?? 'Unassigned',
           gstNumber: gstNumber ?? 'PENDING',
           rating: 0.0,
           status: VendorStatus.pendingVerification,
@@ -91,7 +98,11 @@ class AuthProvider extends ChangeNotifier {
           attachments: [],
           activityLog: ['Account registered on ${DateTime.now().toString().split(' ')[0]}'],
         );
-        await _db.collection('vendors').doc(credential.user!.uid).set(vendor.toJson());
+        final vendorJson = {
+          ...vendor.toJson(),
+          'password': password,
+        };
+        await _db.collection('vendors').doc(credential.user!.uid).set(vendorJson);
       }
 
       _currentUser = userProfile;
@@ -99,6 +110,60 @@ class AuthProvider extends ChangeNotifier {
       debugPrint("Registration error: $e");
       rethrow;
     } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String> registerNewVendorFromAdmin({
+    required String name,
+    required String email,
+    required String password,
+    required String gstNumber,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    FirebaseApp? tempApp;
+    try {
+      final appName = 'TempRegister-${DateTime.now().millisecondsSinceEpoch}';
+      tempApp = await Firebase.initializeApp(
+        name: appName,
+        options: Firebase.app().options,
+      );
+
+      final tempAuth = FirebaseAuth.instanceFor(app: tempApp);
+      final credential = await tempAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final String uid = credential.user!.uid;
+
+      // Create UserProfile in 'users' collection
+      final userProfile = UserProfile(
+        id: uid,
+        name: name,
+        email: email,
+        role: UserRole.vendor,
+        companyName: name,
+        gstNumber: gstNumber,
+        category: 'Unassigned',
+      );
+      final userProfileJson = {
+        ...userProfile.toJson(),
+        'password': password,
+      };
+      await _db.collection('users').doc(uid).set(userProfileJson);
+
+      return uid;
+    } catch (e) {
+      debugPrint("Error registering vendor from admin: $e");
+      rethrow;
+    } finally {
+      if (tempApp != null) {
+        await tempApp.delete();
+      }
       _isLoading = false;
       notifyListeners();
     }

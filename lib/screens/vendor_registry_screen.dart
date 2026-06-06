@@ -565,9 +565,11 @@ class _VendorRegistryScreenState extends State<VendorRegistryScreen> {
     final categoryController = TextEditingController(text: existingVendor?.category ?? 'Metals & Alloys');
     final gstController = TextEditingController(text: existingVendor?.gstNumber ?? '');
     final emailController = TextEditingController(text: existingVendor?.email ?? '');
+    final passwordController = TextEditingController();
     final phoneController = TextEditingController(text: existingVendor?.phone ?? '');
     final addressController = TextEditingController(text: existingVendor?.address ?? '');
     VendorStatus status = existingVendor?.status ?? VendorStatus.pendingVerification;
+    bool isSaving = false;
 
     showDialog(
       context: context,
@@ -633,6 +635,19 @@ class _VendorRegistryScreenState extends State<VendorRegistryScreen> {
                           return null;
                         },
                       ),
+                      if (existingVendor == null) ...[
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: passwordController,
+                          decoration: const InputDecoration(labelText: 'Password'),
+                          obscureText: true,
+                          validator: (val) {
+                            if (val == null || val.isEmpty) return 'Enter password';
+                            if (val.length < 6) return 'Password must be at least 6 characters';
+                            return null;
+                          },
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: phoneController,
@@ -670,48 +685,88 @@ class _VendorRegistryScreenState extends State<VendorRegistryScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(ctx),
+                  onPressed: isSaving ? null : () => Navigator.pop(ctx),
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: isSaving ? null : () {
                     if (formKey.currentState!.validate()) {
+                      setDialogState(() => isSaving = true);
                       final erp = Provider.of<ErpProvider>(context, listen: false);
                       final user = Provider.of<AuthProvider>(context, listen: false).currentUser;
 
-                      final v = Vendor(
-                        id: existingVendor?.id ?? 'VEN-00${erp.vendors.length + 1}',
-                        name: nameController.text.trim(),
-                        category: categoryController.text,
-                        gstNumber: gstController.text.trim().toUpperCase(),
-                        rating: existingVendor?.rating ?? 4.0,
-                        status: status,
-                        email: emailController.text.trim(),
-                        phone: phoneController.text.trim(),
-                        address: addressController.text.trim(),
-                        performance: existingVendor?.performance ?? VendorPerformance(priceScore: 85, qualityScore: 85, deliveryScore: 85),
-                        attachments: existingVendor?.attachments ?? [],
-                        activityLog: existingVendor?.activityLog ?? ['Vendor registered on ${DateTime.now().toString().split(' ')[0]}'],
-                      );
-
                       if (existingVendor == null) {
-                        erp.addVendor(v, user?.name ?? 'Admin').then((_) {
-                          Navigator.pop(ctx);
+                        final auth = Provider.of<AuthProvider>(context, listen: false);
+                        auth.registerNewVendorFromAdmin(
+                          name: nameController.text.trim(),
+                          email: emailController.text.trim(),
+                          password: passwordController.text.trim(),
+                          gstNumber: gstController.text.trim().toUpperCase(),
+                        ).then((uid) {
+                          final v = Vendor(
+                            id: uid,
+                            name: nameController.text.trim(),
+                            category: categoryController.text,
+                            gstNumber: gstController.text.trim().toUpperCase(),
+                            rating: 4.0,
+                            status: status,
+                            email: emailController.text.trim(),
+                            phone: phoneController.text.trim(),
+                            address: addressController.text.trim(),
+                            performance: VendorPerformance(priceScore: 85, qualityScore: 85, deliveryScore: 85),
+                            attachments: [],
+                            activityLog: ['Vendor registered on ${DateTime.now().toString().split(' ')[0]}'],
+                          );
+
+                          erp.addVendor(v, user?.name ?? 'Admin', password: passwordController.text.trim()).then((_) {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Vendor registered successfully!'), backgroundColor: Color(0xFF27AE60)),
+                            );
+                          });
+                        }).catchError((err) {
+                          setDialogState(() => isSaving = false);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Vendor registered successfully!'), backgroundColor: Color(0xFF27AE60)),
+                            SnackBar(content: Text('Failed to register vendor: $err'), backgroundColor: Colors.red),
                           );
                         });
                       } else {
+                        final v = Vendor(
+                          id: existingVendor.id,
+                          name: nameController.text.trim(),
+                          category: categoryController.text,
+                          gstNumber: gstController.text.trim().toUpperCase(),
+                          rating: existingVendor.rating,
+                          status: status,
+                          email: emailController.text.trim(),
+                          phone: phoneController.text.trim(),
+                          address: addressController.text.trim(),
+                          performance: existingVendor.performance,
+                          attachments: existingVendor.attachments,
+                          activityLog: existingVendor.activityLog,
+                        );
+
                         erp.updateVendor(v, user?.name ?? 'Admin').then((_) {
                           Navigator.pop(ctx);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Vendor updated successfully!'), backgroundColor: Color(0xFF27AE60)),
                           );
+                        }).catchError((err) {
+                          setDialogState(() => isSaving = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to update vendor: $err'), backgroundColor: Colors.red),
+                          );
                         });
                       }
                     }
                   },
-                  child: const Text('Save'),
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
+                        )
+                      : const Text('Save'),
                 ),
               ],
             );
